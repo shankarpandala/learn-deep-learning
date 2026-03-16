@@ -30,7 +30,7 @@ function renderMathText(text) {
  *   notation    {string}  Notation description (optional)
  *   label       {string}  e.g. "Definition 1.3"
  */
-function DefinitionBlock({ title, definition, notation, label }) {
+function DefinitionBlock({ title, definition, notation, label, children }) {
   return (
     <div className="my-6 overflow-hidden rounded-xl border-2 border-purple-400/50 bg-purple-50/50 shadow-sm dark:border-purple-500/40 dark:bg-purple-950/20">
       {/* Header */}
@@ -51,11 +51,9 @@ function DefinitionBlock({ title, definition, notation, label }) {
         )}
       </div>
 
-      {/* Definition body */}
-      <div className="px-5 py-4">
-        <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-          {renderMathText(definition)}
-        </p>
+      {/* Definition body — supports both string prop and JSX children */}
+      <div className="px-5 py-4 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+        {children || (definition && <p>{renderMathText(definition)}</p>)}
       </div>
 
       {/* Notation */}

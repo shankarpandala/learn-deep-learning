@@ -18,7 +18,27 @@
   --color-brand-900: oklch(0.20 0.10 280);
 }
 
+/* Subject color palette — 18 equally spaced hues for deep learning subjects */
 :root {
+  --subject-1:  oklch(0.55 0.22 270);  /* Neural Network Foundations — violet */
+  --subject-2:  oklch(0.55 0.22 280);  /* Backpropagation — purple */
+  --subject-3:  oklch(0.58 0.20 240);  /* Regularization — blue */
+  --subject-4:  oklch(0.60 0.20 200);  /* CNNs — cyan */
+  --subject-5:  oklch(0.58 0.20 170);  /* RNNs — teal */
+  --subject-6:  oklch(0.60 0.20 140);  /* Transformers — green */
+  --subject-7:  oklch(0.65 0.20 100);  /* NLP — yellow-green */
+  --subject-8:  oklch(0.65 0.20 72);   /* Computer Vision — yellow */
+  --subject-9:  oklch(0.65 0.20 48);   /* Audio & Speech — orange */
+  --subject-10: oklch(0.60 0.20 24);   /* Video — orange-red */
+  --subject-11: oklch(0.60 0.20 0);    /* Time Series — red */
+  --subject-12: oklch(0.62 0.22 330);  /* Generative Models — pink */
+  --subject-13: oklch(0.60 0.22 310);  /* Reinforcement Learning — magenta */
+  --subject-14: oklch(0.58 0.22 290);  /* Self-Supervised — violet-blue */
+  --subject-15: oklch(0.55 0.22 260);  /* Multimodal — indigo */
+  --subject-16: oklch(0.58 0.20 230);  /* Optimization for DL — sky */
+  --subject-17: oklch(0.62 0.20 350);  /* Interpretability — rose */
+  --subject-18: oklch(0.60 0.22 320);  /* Research Frontiers — fuchsia */
+
   --sidebar-width: 280px;
   --toc-width: 240px;
   --navbar-height: 56px;

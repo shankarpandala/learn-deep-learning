@@ -72,7 +72,7 @@ export default function ModernActivations() {
 
       <ModernPlot />
 
-      <NoteBlock variant="historical" title="Discovery & Adoption">
+      <NoteBlock type="historical" title="Discovery & Adoption">
         <p>
           <strong>Swish</strong> was discovered by Google Brain (2017) through automated search
           over activation function spaces. <strong>GELU</strong> was proposed by Hendrycks & Gimpel (2016).
@@ -131,7 +131,7 @@ class TransformerFFN(nn.Module):
         return self.w2(self.act(self.w1(x)))`}
       />
 
-      <NoteBlock variant="tip" title="Practical Advice">
+      <NoteBlock type="tip" title="Practical Advice">
         <p>
           For <strong>Transformer-based models</strong>, use GELU.
           For <strong>CNNs</strong>, ReLU or SiLU work well.

@@ -32,7 +32,7 @@ function renderMathText(text) {
  *   corollaries  {string[]}  Array of corollary strings
  *   label        {string}    e.g. "Theorem 2.1"
  */
-function TheoremBlock({ title, statement, proof, corollaries = [], label }) {
+function TheoremBlock({ title, statement, proof, corollaries = [], label, children }) {
   const [proofOpen, setProofOpen] = useState(false);
 
   return (
@@ -55,11 +55,9 @@ function TheoremBlock({ title, statement, proof, corollaries = [], label }) {
         )}
       </div>
 
-      {/* Statement */}
-      <div className="px-5 py-4">
-        <p className="text-sm leading-relaxed text-gray-700 italic dark:text-gray-300">
-          {renderMathText(statement)}
-        </p>
+      {/* Statement — supports both string prop and JSX children */}
+      <div className="px-5 py-4 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+        {children || (statement && <p className="italic">{renderMathText(statement)}</p>)}
       </div>
 
       {/* Corollaries */}

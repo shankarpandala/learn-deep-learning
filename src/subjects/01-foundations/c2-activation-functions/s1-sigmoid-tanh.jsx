@@ -121,7 +121,7 @@ print(f"tanh(0) = {tanh(torch.tensor(0.0)):.4f}")
 print(f"tanh'(0) = {x.grad[50]:.4f}")`}
       />
 
-      <NoteBlock variant="note" title="When to Use Sigmoid vs Tanh">
+      <NoteBlock type="note" title="When to Use Sigmoid vs Tanh">
         <p>
           <strong>Sigmoid</strong> is still used for output layers in binary classification
           (mapping to probabilities). <strong>Tanh</strong> is preferred over sigmoid for

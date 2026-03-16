@@ -135,7 +135,7 @@ def huber_loss(pred, target, delta=1.0):
     return torch.where(abs_error <= delta, quadratic, linear).mean()`}
       />
 
-      <NoteBlock variant="tip" title="Choosing a Regression Loss">
+      <NoteBlock type="tip" title="Choosing a Regression Loss">
         <p>
           <strong>MSE</strong>: Default choice; penalizes large errors heavily.
           <strong> MAE</strong>: Robust to outliers; constant gradient magnitude.

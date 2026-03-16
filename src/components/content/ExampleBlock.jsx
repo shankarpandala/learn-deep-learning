@@ -37,7 +37,7 @@ const DIFFICULTY_STYLES = {
  *   solution    {Array}    Array of { step, formula, explanation }
  *   difficulty  {string}   'beginner' | 'intermediate' | 'advanced' | 'research'
  */
-function ExampleBlock({ title, problem, solution = [], difficulty = 'intermediate' }) {
+function ExampleBlock({ title, problem, solution = [], difficulty = 'intermediate', children }) {
   const [solutionOpen, setSolutionOpen] = useState(false);
 
   const difficultyStyle = DIFFICULTY_STYLES[difficulty] || DIFFICULTY_STYLES.intermediate;
@@ -69,14 +69,20 @@ function ExampleBlock({ title, problem, solution = [], difficulty = 'intermediat
         )}
       </div>
 
-      {/* Problem */}
-      <div className="px-5 py-4">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-          Problem
-        </p>
-        <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-          {renderMathText(problem)}
-        </p>
+      {/* Problem / Content — supports both string prop and JSX children */}
+      <div className="px-5 py-4 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+        {children || (
+          <>
+            {problem && (
+              <>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Problem
+                </p>
+                <p>{renderMathText(problem)}</p>
+              </>
+            )}
+          </>
+        )}
       </div>
 
       {/* Solution toggle */}

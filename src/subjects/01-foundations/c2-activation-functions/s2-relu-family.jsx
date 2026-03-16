@@ -118,7 +118,7 @@ print(f"PReLU:     {prelu(x).tolist()}")
 print(f"ELU:       {[f'{v:.4f}' for v in elu(x).tolist()]}")`}
       />
 
-      <NoteBlock variant="tip" title="When to Use What">
+      <NoteBlock type="tip" title="When to Use What">
         <p>
           <strong>ReLU</strong> is the default choice for most architectures.
           Use <strong>Leaky ReLU</strong> if you observe many dead neurons.

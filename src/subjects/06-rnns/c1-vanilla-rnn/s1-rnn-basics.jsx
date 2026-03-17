@@ -114,6 +114,17 @@ print(f"Params: {sum(p.numel() for p in rnn.parameters()):,}")`}
           gradient problem, motivating architectures like LSTM and GRU.
         </p>
       </DefinitionBlock>
+
+      <ExampleBlock title="Common RNN Patterns">
+        <p>
+          RNNs can be configured in several input-output patterns:
+          <strong> One-to-many</strong> (image captioning),
+          <strong> many-to-one</strong> (sentiment classification),
+          <strong> many-to-many</strong> (machine translation, language modeling).
+          The same core recurrence equation applies in all cases; only the input feeding
+          and output tapping differ.
+        </p>
+      </ExampleBlock>
     </div>
   )
 }

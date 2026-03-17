@@ -154,43 +154,35 @@ print("Synonym:", ' '.join(synonym_replace(text.split())))
 print("Deletion:", ' '.join(random_deletion(text.split(), p=0.2)))
 
 # --- SpecAugment for Audio ---
-def spec_augment(spec, freq_mask_param=15, time_mask_param=20, n_freq=2, n_time=2):
-    """Apply SpecAugment to a spectrogram [freq, time]."""
+def spec_augment(spec, freq_mask=15, time_mask=20):
     cloned = spec.clone()
     F, T = cloned.shape
-
-    for _ in range(n_freq):
-        f = random.randint(0, min(freq_mask_param, F))
-        f0 = random.randint(0, F - f)
-        cloned[f0:f0+f, :] = 0
-
-    for _ in range(n_time):
-        t = random.randint(0, min(time_mask_param, T))
-        t0 = random.randint(0, T - t)
-        cloned[:, t0:t0+t] = 0
-
+    f = random.randint(0, min(freq_mask, F))
+    f0 = random.randint(0, F - f)
+    cloned[f0:f0+f, :] = 0
+    t = random.randint(0, min(time_mask, T))
+    t0 = random.randint(0, T - t)
+    cloned[:, t0:t0+t] = 0
     return cloned
 
 spec = torch.randn(80, 200)  # 80 mel bins, 200 time steps
 augmented = spec_augment(spec)
-print(f"Zeroed elements: {(augmented == 0).sum().item()} / {spec.numel()}")`}
+print(f"Zeroed: {(augmented == 0).sum().item()} / {spec.numel()}")`}
       />
 
       <WarningBlock title="Text Augmentation Caveats">
         <p>
-          Text augmentation can change semantics more easily than image augmentation.
-          Synonym replacement may alter meaning in context ("bank" as river vs financial).
-          Back-translation quality depends on the translation model. For large language models,
-          augmentation is less critical since pretraining provides strong regularization.
+          Text augmentation can change semantics easily. Synonym replacement may alter meaning
+          in context. Back-translation quality depends on the translation model. For large
+          language models, augmentation is less critical since pretraining provides regularization.
         </p>
       </WarningBlock>
 
       <NoteBlock type="note" title="Modality-Specific Considerations">
         <p>
-          Each modality has unique invariances: images are invariant to flips and small
-          rotations; text preserves meaning under paraphrase; audio tolerates speed changes
-          and background noise. The best augmentation strategy encodes the invariances
-          specific to your task and domain.
+          Each modality has unique invariances. The best augmentation strategy encodes the
+          invariances specific to your task: flips for images, paraphrase for text, speed
+          changes and noise for audio.
         </p>
       </NoteBlock>
     </div>

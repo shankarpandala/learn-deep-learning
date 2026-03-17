@@ -108,6 +108,16 @@ print(f"High-confidence detections: {keep.sum().item()}")`}
           objects at multiple scales efficiently and is now standard in modern detectors.
         </p>
       </NoteBlock>
+
+      <ExampleBlock title="Anchor Box Design">
+        <p>
+          Faster R-CNN uses anchors at multiple scales and aspect ratios at each spatial location.
+          Common configurations use 3 scales (<InlineMath math="128^2, 256^2, 512^2" />) and
+          3 aspect ratios (<InlineMath math="1:1, 1:2, 2:1" />), producing <InlineMath math="k = 9" /> anchors
+          per location. The RPN classifies each anchor as object/background and regresses
+          box offsets <InlineMath math="(\Delta x, \Delta y, \Delta w, \Delta h)" />.
+        </p>
+      </ExampleBlock>
     </div>
   )
 }

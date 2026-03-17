@@ -100,11 +100,22 @@ for name, module in model.features.named_children():
     print(f"  Stage {name}: {module.__class__.__name__}")`}
       />
 
+      <NoteBlock type="note" title="Squeeze-and-Excitation (SE) Blocks">
+        <p>
+          Each MBConv block in EfficientNet includes a SE module that recalibrates channel-wise
+          features. It squeezes spatial information via global average pooling, then excites
+          channels through two FC layers with a sigmoid gate:{' '}
+          <InlineMath math="s = \sigma(W_2 \cdot \text{ReLU}(W_1 \cdot z))" />. This adaptive
+          channel weighting improves representational power with minimal overhead.
+        </p>
+      </NoteBlock>
+
       <NoteBlock type="note" title="EfficientNet v2">
         <p>
           EfficientNet v2 (2021) improved training speed by using Fused-MBConv blocks in early
           stages (replacing depthwise separable with standard convolutions), progressive learning
-          (increasing image size during training), and adaptive regularization.
+          (increasing image size during training), and adaptive regularization. It achieves
+          similar accuracy to EfficientNet v1 while training up to 11x faster.
         </p>
       </NoteBlock>
     </div>

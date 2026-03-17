@@ -101,9 +101,22 @@ print(f"SigLIP loss: {siglip_loss(img, txt).item():.4f}")`}
         <p>
           OpenCLIP was trained on LAION-400M and LAION-2B, large-scale image-text datasets
           collected from Common Crawl. These datasets enabled the research community to
-          reproduce and extend CLIP-style training without proprietary data.
+          reproduce and extend CLIP-style training without proprietary data. Key processing
+          steps include NSFW filtering, deduplication, and CLIP-based quality scoring to
+          remove low-quality pairs.
         </p>
       </NoteBlock>
+
+      <ExampleBlock title="SigLIP vs CLIP Performance Comparison">
+        <p>SigLIP with ViT-B/16 on ImageNet zero-shot classification:</p>
+        <ul className="list-disc list-inside mt-2 space-y-1">
+          <li>SigLIP: 73.2% top-1 accuracy (sigmoid loss)</li>
+          <li>CLIP: 71.1% top-1 accuracy (softmax loss)</li>
+          <li>Improvement comes from better gradient signal per pair</li>
+          <li>Advantage grows at smaller batch sizes (128-4096)</li>
+        </ul>
+        <p className="mt-2">The sigmoid loss also enables batch sizes up to 1M without communication overhead.</p>
+      </ExampleBlock>
     </div>
   )
 }

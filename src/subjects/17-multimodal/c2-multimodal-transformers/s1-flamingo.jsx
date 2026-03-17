@@ -103,6 +103,18 @@ print(f"Initial gate value: {torch.tanh(layer.gate).item():.4f}")`}
           learning with text-only examples.
         </p>
       </NoteBlock>
+
+      <NoteBlock type="warning" title="Frozen vs Fine-Tuned Components">
+        <p>
+          Flamingo keeps both the vision encoder and LLM frozen, training only the cross-attention
+          layers and Perceiver Resampler (~1.5% of total parameters). This preserves the strong
+          pretrained representations while being data-efficient. However, the frozen backbone
+          limits adaptation to domains far from the pretraining distribution. Follow-up work
+          like IDEFICS explores selective unfreezing for domain adaptation. OpenFlamingo
+          provides an open-source reproduction achieving competitive results with public
+          datasets (LAION-2B, MMC4).
+        </p>
+      </NoteBlock>
     </div>
   )
 }

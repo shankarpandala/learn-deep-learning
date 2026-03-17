@@ -109,7 +109,10 @@ print(f"Initial output magnitude: {out.abs().mean():.6f}")  # ~0 at init`}
           Beyond ControlNet, other methods add control to diffusion: IP-Adapter uses image embeddings
           as conditioning (image-prompted generation), T2I-Adapter adds lightweight control modules,
           and LoRA fine-tunes specific weight matrices for style transfer. These can be composed
-          together for multi-condition generation.
+          together for multi-condition generation — for example, combining a pose ControlNet
+          with a depth ControlNet and a style LoRA to generate a specifically posed character
+          in a particular style and spatial layout. This composability makes ControlNet
+          a foundational tool in production image generation pipelines.
         </p>
       </NoteBlock>
     </div>

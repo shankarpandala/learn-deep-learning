@@ -109,6 +109,16 @@ print(f"Image tokens: {tokens.shape}, unique codes used: {tokens.unique().numel(
           images but moved away from the elegant unified token-based approach.
         </p>
       </NoteBlock>
+
+      <NoteBlock type="note" title="Modern Image Tokenizers">
+        <p>
+          The dVAE in DALL-E has been superseded by improved tokenizers: VQGAN uses adversarial
+          training and perceptual losses for sharper reconstructions, while MAGVIT-v2 achieves
+          near-lossless image compression at high compression ratios. These tokenizers are also
+          used in video generation (VideoGPT, MAGVIT) and unified vision-language models that
+          generate both text and images autoregressively.
+        </p>
+      </NoteBlock>
     </div>
   )
 }

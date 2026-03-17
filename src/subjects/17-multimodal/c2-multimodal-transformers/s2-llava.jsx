@@ -102,6 +102,20 @@ print(f"Combined sequence: {combined.shape}")  # [1, 704, 4096]`}
           Data quality and diversity of instruction types are critical for generalization.
         </p>
       </WarningBlock>
+
+      <NoteBlock type="note" title="LLaVA-1.5 and Beyond">
+        <p>
+          LLaVA-1.5 improved on the original with three changes: (1) replacing the linear projection
+          with a two-layer MLP, (2) using higher resolution input (336px vs 224px), and (3) adding
+          academic VQA data to the instruction mix. These simple changes pushed LLaVA-1.5 13B to
+          match or exceed models trained on orders of magnitude more data (InstructBLIP, Qwen-VL).
+          The architecture's simplicity became its strength — easy to iterate on and scale.
+          LLaVA-NeXT further extends this with dynamic high-resolution input and stronger
+          base LLMs, achieving near-GPT-4V performance on several benchmarks.
+          The LLaVA family demonstrates that simple architectures with careful data curation
+          can compete with far more complex systems.
+        </p>
+      </NoteBlock>
     </div>
   )
 }

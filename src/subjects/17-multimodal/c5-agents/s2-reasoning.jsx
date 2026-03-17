@@ -107,7 +107,12 @@ print(f"Answer: {ans}, Confidence: {conf:.2f}")
           Self-consistency, tree-of-thought, and PRM-guided search all trade inference compute
           for accuracy. This creates a new scaling axis: instead of making models larger, spend
           more compute at inference time. For many reasoning tasks, doubling inference compute
-          is more effective than doubling model parameters.
+          is more effective than doubling model parameters. OpenAI's o1 model and DeepSeek R1
+          demonstrate that training models specifically for extended reasoning produces large
+          gains on math, coding, and science benchmarks. The key insight is to generate long
+          reasoning traces during RL training, rewarding correct final answers regardless of
+          the specific reasoning path taken. This teaches models to allocate variable compute
+          based on problem difficulty.
         </p>
       </NoteBlock>
     </div>

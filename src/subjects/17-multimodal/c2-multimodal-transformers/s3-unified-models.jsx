@@ -109,6 +109,16 @@ print(f"Combined multimodal sequence: {combined.shape}")  # [1, 320, 768]`}
           richer cross-modal reasoning but requires training on paired multimodal data.
         </p>
       </NoteBlock>
+
+      <NoteBlock type="warning" title="Challenges of Unified Models">
+        <p>
+          Natively multimodal training introduces unique challenges: (1) balancing loss across
+          modalities — text tends to dominate due to higher data volume, (2) tokenization
+          inconsistencies between modalities, (3) evaluation is harder since capabilities span
+          many benchmarks. Despite these challenges, the trend is clearly toward unified
+          architectures that can seamlessly reason across modalities in a single forward pass.
+        </p>
+      </NoteBlock>
     </div>
   )
 }

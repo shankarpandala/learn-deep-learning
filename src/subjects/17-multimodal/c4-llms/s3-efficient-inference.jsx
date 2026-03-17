@@ -102,6 +102,21 @@ print(f"Memory savings: {(1 - 1/4) * 100:.0f}%")`}
           offers a better quality-efficiency tradeoff.
         </p>
       </NoteBlock>
+
+      <ExampleBlock title="GPTQ and AWQ: Advanced Quantization">
+        <p>Modern quantization methods go beyond simple absmax:</p>
+        <ul className="list-disc list-inside mt-2 space-y-1">
+          <li><strong>GPTQ:</strong> Layer-wise quantization minimizing reconstruction error using Hessian information</li>
+          <li><strong>AWQ:</strong> Activation-aware quantization that protects salient weight channels</li>
+          <li><strong>GGUF:</strong> File format for CPU-friendly quantized inference (llama.cpp)</li>
+          <li>4-bit GPTQ on LLaMA-2 70B: only ~1% accuracy drop, fits on a single 48GB GPU</li>
+          <li><strong>FP8:</strong> Native 8-bit floating point supported on H100 GPUs for near-lossless inference</li>
+        </ul>
+        <p className="mt-2">
+          The trend toward lower precision continues: 2-bit and 1.58-bit (ternary) quantization
+          are active research areas with promising early results.
+        </p>
+      </ExampleBlock>
     </div>
   )
 }

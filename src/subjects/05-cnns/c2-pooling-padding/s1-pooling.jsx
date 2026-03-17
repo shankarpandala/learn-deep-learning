@@ -5,67 +5,58 @@ import DefinitionBlock from '../../../components/content/DefinitionBlock.jsx'
 import ExampleBlock from '../../../components/content/ExampleBlock.jsx'
 import NoteBlock from '../../../components/content/NoteBlock.jsx'
 import PythonCode from '../../../components/content/PythonCode.jsx'
-import WarningBlock from '../../../components/content/WarningBlock.jsx'
 
 function PoolingDemo() {
-  const [poolType, setPoolType] = useState('max')
-  const grid = [
+  const [mode, setMode] = useState('max')
+  const input = [
     [1, 3, 2, 4],
     [5, 6, 1, 2],
-    [7, 2, 3, 8],
-    [0, 4, 5, 1],
+    [3, 2, 7, 8],
+    [4, 1, 5, 3],
   ]
-  const [highlight, setHighlight] = useState(0)
+  const [highlight, setHighlight] = useState([0, 0])
 
-  const regions = [
-    { r: 0, c: 0 }, { r: 0, c: 2 }, { r: 2, c: 0 }, { r: 2, c: 2 },
-  ]
-  const region = regions[highlight]
-  const vals = [grid[region.r][region.c], grid[region.r][region.c + 1], grid[region.r + 1][region.c], grid[region.r + 1][region.c + 1]]
-  const pooled = regions.map(rg => {
-    const v = [grid[rg.r][rg.c], grid[rg.r][rg.c + 1], grid[rg.r + 1][rg.c], grid[rg.r + 1][rg.c + 1]]
-    return poolType === 'max' ? Math.max(...v) : (v.reduce((a, b) => a + b) / 4).toFixed(1)
-  })
+  const pooled = (r, c) => {
+    const block = [input[r * 2][c * 2], input[r * 2][c * 2 + 1], input[r * 2 + 1][c * 2], input[r * 2 + 1][c * 2 + 1]]
+    return mode === 'max' ? Math.max(...block) : (block.reduce((a, b) => a + b, 0) / 4).toFixed(1)
+  }
+
+  const cellW = 48, cellH = 40
 
   return (
     <div className="my-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900/50">
-      <h3 className="mb-1 text-base font-bold text-gray-800 dark:text-gray-200">2x2 Pooling Demo</h3>
+      <h3 className="mb-1 text-base font-bold text-gray-800 dark:text-gray-200">Interactive Pooling Demo</h3>
       <div className="flex items-center gap-4 mb-3">
-        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <select value={poolType} onChange={e => setPoolType(e.target.value)} className="rounded border px-2 py-1 text-sm dark:bg-gray-800 dark:border-gray-600">
-            <option value="max">Max Pooling</option>
-            <option value="avg">Average Pooling</option>
-          </select>
-        </label>
-        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          Region: {highlight}
-          <input type="range" min={0} max={3} step={1} value={highlight} onChange={e => setHighlight(parseInt(e.target.value))} className="w-28 accent-violet-500" />
-        </label>
+        {['max', 'avg'].map(m => (
+          <label key={m} className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+            <input type="radio" name="pool" checked={mode === m} onChange={() => setMode(m)} className="accent-violet-500" />
+            {m === 'max' ? 'Max' : 'Average'} Pooling
+          </label>
+        ))}
       </div>
-      <div className="flex items-center gap-6">
-        <div className="grid grid-cols-4 gap-1">
-          {grid.flat().map((v, i) => {
-            const r = Math.floor(i / 4), c = i % 4
-            const active = r >= region.r && r < region.r + 2 && c >= region.c && c < region.c + 2
+      <div className="flex items-center gap-8 justify-center">
+        <svg width={4 * cellW + 10} height={4 * cellH + 10}>
+          {input.map((row, r) => row.map((v, c) => {
+            const isActive = Math.floor(r / 2) === highlight[0] && Math.floor(c / 2) === highlight[1]
             return (
-              <div key={i} className={`w-10 h-10 flex items-center justify-center rounded text-sm font-mono border ${active ? 'bg-violet-100 border-violet-400 dark:bg-violet-900/40 dark:border-violet-500' : 'bg-gray-50 border-gray-300 dark:bg-gray-800 dark:border-gray-600'}`}>
-                {v}
-              </div>
+              <g key={`${r}-${c}`}>
+                <rect x={5 + c * cellW} y={5 + r * cellH} width={cellW} height={cellH} fill={isActive ? '#ddd6fe' : '#f9fafb'} stroke="#9ca3af" strokeWidth={1} rx={3} />
+                <text x={5 + c * cellW + cellW / 2} y={5 + r * cellH + cellH / 2 + 5} textAnchor="middle" fontSize={14} fill="#374151">{v}</text>
+              </g>
             )
-          })}
-        </div>
-        <span className="text-gray-400 text-xl">&rarr;</span>
-        <div className="grid grid-cols-2 gap-1">
-          {pooled.map((v, i) => (
-            <div key={i} className={`w-10 h-10 flex items-center justify-center rounded text-sm font-mono border ${i === highlight ? 'bg-violet-200 border-violet-500 dark:bg-violet-800/50 dark:border-violet-400' : 'bg-gray-50 border-gray-300 dark:bg-gray-800 dark:border-gray-600'}`}>
-              {v}
-            </div>
-          ))}
-        </div>
+          }))}
+        </svg>
+        <span className="text-2xl text-gray-400">&rarr;</span>
+        <svg width={2 * cellW + 10} height={2 * cellH + 10}>
+          {[0, 1].map(r => [0, 1].map(c => (
+            <g key={`o-${r}-${c}`} onMouseEnter={() => setHighlight([r, c])} style={{ cursor: 'pointer' }}>
+              <rect x={5 + c * cellW} y={5 + r * cellH} width={cellW} height={cellH} fill={r === highlight[0] && c === highlight[1] ? '#a78bfa' : '#ede9fe'} stroke="#7c3aed" strokeWidth={1.5} rx={3} />
+              <text x={5 + c * cellW + cellW / 2} y={5 + r * cellH + cellH / 2 + 5} textAnchor="middle" fontSize={14} fill="#4c1d95">{pooled(r, c)}</text>
+            </g>
+          )))}
+        </svg>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-        Region values: [{vals.join(', ')}] &rarr; {poolType === 'max' ? 'max' : 'avg'} = <strong className="text-violet-600 dark:text-violet-400">{pooled[highlight]}</strong>
-      </p>
+      <p className="text-xs text-center text-gray-500 mt-2">Hover over output cells to see which input region they correspond to.</p>
     </div>
   )
 }
@@ -74,27 +65,32 @@ export default function Pooling() {
   return (
     <div className="space-y-6">
       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-        Pooling layers reduce spatial dimensions, decrease computation, and provide a degree of
-        translation invariance by summarizing local regions.
+        Pooling layers reduce spatial dimensions of feature maps, providing translation invariance
+        and reducing computational cost. Max and average pooling are the two most common variants.
       </p>
 
       <DefinitionBlock title="Max Pooling">
-        <BlockMath math="y_{i,j} = \max_{(m,n) \in R_{i,j}} x_{m,n}" />
-        <p className="mt-2">Selects the maximum value in each pooling region. Preserves dominant features.</p>
+        <BlockMath math="Y[i, j] = \max_{(m,n) \in \mathcal{R}_{ij}} X[m, n]" />
+        <p className="mt-2">
+          Selects the maximum value in each <InlineMath math="k \times k" /> pooling window.
+          This preserves the strongest activations and provides robustness to small translations.
+        </p>
       </DefinitionBlock>
 
       <DefinitionBlock title="Average Pooling">
-        <BlockMath math="y_{i,j} = \frac{1}{|R|}\sum_{(m,n) \in R_{i,j}} x_{m,n}" />
-        <p className="mt-2">Computes the mean of the pooling region. Smoother but may dilute strong activations.</p>
+        <BlockMath math="Y[i, j] = \frac{1}{k^2} \sum_{(m,n) \in \mathcal{R}_{ij}} X[m, n]" />
+        <p className="mt-2">
+          Computes the mean of all values in the pooling window. Smoother than max pooling but
+          may lose fine-grained spatial detail.
+        </p>
       </DefinitionBlock>
 
       <PoolingDemo />
 
-      <ExampleBlock title="Translation Invariance">
-        <p>
-          If an edge feature shifts by 1 pixel within a <InlineMath math="2 \times 2" /> pooling window,
-          the max-pooled output remains the same, providing robustness to small spatial translations.
-        </p>
+      <ExampleBlock title="Spatial Downsampling">
+        <p>A <InlineMath math="2 \times 2" /> pooling with stride 2 on a <InlineMath math="224 \times 224" /> feature map:</p>
+        <BlockMath math="224 \times 224 \xrightarrow{\text{pool}} 112 \times 112" />
+        <p>Each pooling operation halves spatial dimensions and reduces computation by 4x in subsequent layers.</p>
       </ExampleBlock>
 
       <PythonCode
@@ -104,26 +100,28 @@ import torch.nn as nn
 
 x = torch.randn(1, 64, 32, 32)
 
-# Max pooling: 2x2 window, stride 2
+# Max pooling 2x2 with stride 2
 max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
-print(f"Max pool: {x.shape} -> {max_pool(x).shape}")  # [1,64,16,16]
+print(f"MaxPool: {x.shape} -> {max_pool(x).shape}")  # [1, 64, 16, 16]
 
-# Average pooling: 2x2 window, stride 2
+# Average pooling 2x2 with stride 2
 avg_pool = nn.AvgPool2d(kernel_size=2, stride=2)
-print(f"Avg pool: {x.shape} -> {avg_pool(x).shape}")  # [1,64,16,16]
+print(f"AvgPool: {x.shape} -> {avg_pool(x).shape}")  # [1, 64, 16, 16]
 
-# Adaptive pooling: specify output size, not kernel size
-adaptive = nn.AdaptiveAvgPool2d((1, 1))
-print(f"Adaptive: {x.shape} -> {adaptive(x).shape}")  # [1,64,1,1]`}
+# Max pooling with return_indices (useful for unpooling)
+pool_idx = nn.MaxPool2d(2, stride=2, return_indices=True)
+output, indices = pool_idx(x)
+print(f"Indices shape: {indices.shape}")  # [1, 64, 16, 16]`}
       />
 
-      <WarningBlock title="Information Loss">
+      <NoteBlock type="note" title="Pooling vs Strided Convolutions">
         <p>
-          Pooling discards spatial information irreversibly. In tasks requiring precise localization
-          (segmentation, detection), aggressive pooling can harm performance. Modern architectures
-          often use strided convolutions as a learnable alternative.
+          Modern architectures like ResNet and ConvNeXt often replace pooling with strided
+          convolutions. Strided convolutions are learnable and can preserve more information,
+          though they add parameters. Max pooling remains popular for its simplicity and
+          translation invariance properties.
         </p>
-      </WarningBlock>
+      </NoteBlock>
     </div>
   )
 }

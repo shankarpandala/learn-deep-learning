@@ -11,40 +11,50 @@ function KernelSlidingDemo() {
   const input = [1, 0, 2, 3, 1, 0, 1]
   const kernel = [1, 0, -1]
   const kSize = kernel.length
-  const outLen = input.length - kSize + 1
-  const clampedPos = Math.min(pos, outLen - 1)
+  const outSize = input.length - kSize + 1
+  const maxPos = outSize - 1
 
-  const outputVal = input.slice(clampedPos, clampedPos + kSize).reduce((s, v, i) => s + v * kernel[i], 0)
-  const outputs = Array.from({ length: outLen }, (_, p) =>
-    input.slice(p, p + kSize).reduce((s, v, i) => s + v * kernel[i], 0)
-  )
+  const computeOutput = (p) => {
+    let sum = 0
+    for (let k = 0; k < kSize; k++) sum += input[p + k] * kernel[k]
+    return sum
+  }
+
+  const outputs = Array.from({ length: outSize }, (_, i) => computeOutput(i))
+  const cellW = 44, cellH = 40
 
   return (
     <div className="my-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900/50">
-      <h3 className="mb-1 text-base font-bold text-gray-800 dark:text-gray-200">1D Kernel Sliding Demo</h3>
+      <h3 className="mb-1 text-base font-bold text-gray-800 dark:text-gray-200">Interactive Kernel Sliding Demo</h3>
       <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
-        Position: {clampedPos}
-        <input type="range" min={0} max={outLen - 1} step={1} value={clampedPos} onChange={e => setPos(parseInt(e.target.value))} className="w-40 accent-violet-500" />
+        Position: {pos}
+        <input type="range" min={0} max={maxPos} step={1} value={pos} onChange={e => setPos(parseInt(e.target.value))} className="w-40 accent-violet-500" />
       </label>
-      <div className="flex gap-1 mb-2">
+      <svg width={input.length * cellW + 20} height={160} className="mx-auto block">
         {input.map((v, i) => (
-          <div key={i} className={`w-10 h-10 flex items-center justify-center rounded text-sm font-mono border ${i >= clampedPos && i < clampedPos + kSize ? 'bg-violet-100 border-violet-400 dark:bg-violet-900/40 dark:border-violet-500' : 'bg-gray-50 border-gray-300 dark:bg-gray-800 dark:border-gray-600'}`}>
-            {v}
-          </div>
+          <g key={`in-${i}`}>
+            <rect x={10 + i * cellW} y={10} width={cellW} height={cellH} fill={i >= pos && i < pos + kSize ? '#ddd6fe' : '#f3f4f6'} stroke="#9ca3af" strokeWidth={1} rx={4} />
+            <text x={10 + i * cellW + cellW / 2} y={35} textAnchor="middle" fontSize={14} fill="#374151">{v}</text>
+          </g>
         ))}
-        <span className="ml-2 text-xs text-gray-500 self-center">input</span>
-      </div>
-      <div className="flex gap-1 mb-2" style={{ marginLeft: clampedPos * 44 }}>
         {kernel.map((v, i) => (
-          <div key={i} className="w-10 h-10 flex items-center justify-center rounded text-sm font-mono bg-violet-200 border border-violet-500 dark:bg-violet-800/50 dark:border-violet-400">
-            {v}
-          </div>
+          <g key={`k-${i}`}>
+            <rect x={10 + (pos + i) * cellW} y={60} width={cellW} height={cellH} fill="#c4b5fd" stroke="#7c3aed" strokeWidth={1.5} rx={4} />
+            <text x={10 + (pos + i) * cellW + cellW / 2} y={85} textAnchor="middle" fontSize={14} fill="#4c1d95">{v}</text>
+          </g>
         ))}
-        <span className="ml-2 text-xs text-gray-500 self-center">kernel</span>
-      </div>
-      <p className="text-sm text-gray-700 dark:text-gray-300 mt-3">
-        Output at position {clampedPos}: <strong className="text-violet-600 dark:text-violet-400">{outputVal}</strong>
-        <span className="ml-4">Full output: [{outputs.join(', ')}]</span>
+        {outputs.map((v, i) => (
+          <g key={`o-${i}`}>
+            <rect x={10 + (i + 1) * cellW} y={115} width={cellW} height={cellH} fill={i === pos ? '#a78bfa' : '#f3f4f6'} stroke="#9ca3af" strokeWidth={1} rx={4} />
+            <text x={10 + (i + 1) * cellW + cellW / 2} y={140} textAnchor="middle" fontSize={14} fill={i === pos ? '#ffffff' : '#374151'}>{v}</text>
+          </g>
+        ))}
+        <text x={5} y={35} fontSize={11} fill="#6b7280">Input</text>
+        <text x={5} y={85} fontSize={11} fill="#6b7280">Kernel</text>
+        <text x={5} y={140} fontSize={11} fill="#6b7280">Output</text>
+      </svg>
+      <p className="text-xs text-center text-gray-500 mt-2">
+        {kernel.map((k, i) => `${input[pos + i]}*${k >= 0 ? k : `(${k})`}`).join(' + ')} = {computeOutput(pos)}
       </p>
     </div>
   )
@@ -54,32 +64,33 @@ export default function DiscreteConvolution() {
   return (
     <div className="space-y-6">
       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-        Convolution is the core operation in CNNs. It applies a learned kernel (filter) across
-        the input to produce a feature map, detecting local patterns such as edges, textures, and shapes.
+        Convolution is the fundamental operation in CNNs. It slides a small learnable kernel across the
+        input, computing element-wise products and summing them to produce a feature map. In practice,
+        deep learning frameworks implement cross-correlation rather than true convolution.
       </p>
 
       <DefinitionBlock title="1D Discrete Convolution">
         <BlockMath math="(f * g)[n] = \sum_{k} f[k] \, g[n - k]" />
         <p className="mt-2">
-          In practice, deep learning frameworks compute <strong>cross-correlation</strong> (no kernel flip):
+          In deep learning, we typically use <strong>cross-correlation</strong> (no kernel flip):
         </p>
-        <BlockMath math="(f \star g)[n] = \sum_{k} f[k] \, g[n + k]" />
+        <BlockMath math="(f \star g)[n] = \sum_{k} f[n + k] \, g[k]" />
       </DefinitionBlock>
 
-      <DefinitionBlock title="2D Convolution">
-        <BlockMath math="(I * K)[i, j] = \sum_{m}\sum_{n} K[m, n] \cdot I[i + m, j + n]" />
+      <DefinitionBlock title="2D Convolution (Feature Map)">
+        <BlockMath math="Y[i, j] = \sum_{m=0}^{k_h-1} \sum_{n=0}^{k_w-1} X[i+m,\, j+n] \cdot W[m, n] + b" />
         <p className="mt-2">
-          A kernel of size <InlineMath math="k \times k" /> slides over the 2D input. Each position
-          produces one value in the output feature map.
+          Where <InlineMath math="W" /> is the <InlineMath math="k_h \times k_w" /> kernel,{' '}
+          <InlineMath math="X" /> is the input, and <InlineMath math="b" /> is the bias.
         </p>
       </DefinitionBlock>
 
       <KernelSlidingDemo />
 
-      <ExampleBlock title="Output Size Calculation">
-        <p>For input size <InlineMath math="W" />, kernel size <InlineMath math="K" />, padding <InlineMath math="P" />, and stride <InlineMath math="S" />:</p>
-        <BlockMath math="W_{out} = \left\lfloor \frac{W - K + 2P}{S} \right\rfloor + 1" />
-        <p className="mt-2">Example: input 32, kernel 5, padding 0, stride 1 gives <InlineMath math="\lfloor(32 - 5)/1\rfloor + 1 = 28" /></p>
+      <ExampleBlock title="Output Size Computation">
+        <p>For an input of size <InlineMath math="n" /> with kernel size <InlineMath math="k" /> and no padding or stride:</p>
+        <BlockMath math="n_{\text{out}} = n - k + 1" />
+        <p>Example: input size 7, kernel size 3 gives output size <InlineMath math="7 - 3 + 1 = 5" />.</p>
       </ExampleBlock>
 
       <PythonCode
@@ -87,27 +98,22 @@ export default function DiscreteConvolution() {
         code={`import torch
 import torch.nn as nn
 
-# Single channel 5x5 input, 3x3 kernel
+# Input: batch=1, channels=1, height=5, width=5
 x = torch.randn(1, 1, 5, 5)
-conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, padding=0)
 
-out = conv(x)
-print(f"Input shape:  {x.shape}")      # [1, 1, 5, 5]
-print(f"Output shape: {out.shape}")     # [1, 1, 3, 3]
-print(f"Kernel shape: {conv.weight.shape}")  # [1, 1, 3, 3]
-
-# Cross-correlation vs convolution
-# PyTorch uses cross-correlation by default (no kernel flip)
-kernel = conv.weight.data[0, 0]
-print(f"Kernel values:\\n{kernel}")`}
+# Conv2d: in_channels=1, out_channels=4, kernel_size=3
+conv = nn.Conv2d(1, 4, kernel_size=3, padding=0)
+y = conv(x)
+print(f"Input shape:  {x.shape}")   # [1, 1, 5, 5]
+print(f"Output shape: {y.shape}")   # [1, 4, 3, 3]
+print(f"Parameters:   {sum(p.numel() for p in conv.parameters())}")  # 4*(1*3*3+1) = 40`}
       />
 
       <NoteBlock type="note" title="Convolution vs Cross-Correlation">
         <p>
-          True convolution flips the kernel before sliding. In deep learning, because kernels are
-          <strong> learned</strong>, flipping is unnecessary — the network simply learns the flipped
-          version. All major frameworks (PyTorch, TensorFlow) implement cross-correlation but call
-          it "convolution" by convention.
+          True convolution flips the kernel before sliding. Deep learning calls the operation
+          "convolution" but implements cross-correlation. Since kernels are learned, the flip is
+          absorbed into the weights, making the distinction irrelevant in practice.
         </p>
       </NoteBlock>
     </div>

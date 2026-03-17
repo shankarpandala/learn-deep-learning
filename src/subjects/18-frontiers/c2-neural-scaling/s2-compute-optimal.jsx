@@ -105,7 +105,7 @@ for log_infer in [12, 13, 14, 15]:
     cost_chin = total_cost(N_chin, D_chin, infer_tok)
     cost_small = total_cost(N_small, D_small, infer_tok)
     winner = "Chinchilla" if cost_chin < cost_small else "Over-train"
-    print(f"  10^{log_infer} tokens    ${cost_chin:.2f}          ${cost_small:.2f}           {winner}")
+    print(f"  10^{log_infer} tokens    {cost_chin:.2f}          {cost_small:.2f}           {winner}")
 print("\\nConclusion: Over-training wins when inference demand is high")`}
       />
 

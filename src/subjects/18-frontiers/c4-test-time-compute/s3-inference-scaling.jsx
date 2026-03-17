@@ -68,7 +68,7 @@ export default function InferenceScalingLaws() {
         <ul className="list-disc list-inside mt-2 space-y-1">
           <li>7B model with 256 samples + PRM matches 70B model with 1 sample on MATH</li>
           <li>Cost comparison: 7B x 256 = 1792B FLOPs vs 70B x 1 = 70B FLOPs (7B wins on accuracy per FLOP)</li>
-          <li>Wait — 7B x 256 > 70B? Yes, but the cost is purely sequential generation, highly parallelizable</li>
+          <li>Wait — 7B x 256 &gt; 70B? Yes, but the cost is purely sequential generation, highly parallelizable</li>
           <li>Latency vs throughput: parallel BoN has same latency as single sample</li>
         </ul>
       </ExampleBlock>

@@ -99,42 +99,42 @@ export default function PatchTSTChannelIndependence() {
       </ExampleBlock>
 
       <PythonCode
-        title="PatchTST Core Architecture"
-        code={`import torch
-import torch.nn as nn
+        title="PatchTST with HuggingFace Transformers"
+        code={`from transformers import PatchTSTConfig, PatchTSTForPrediction
+import torch
 
-class PatchTST(nn.Module):
-    def __init__(self, seq_len=96, pred_len=24, patch_len=16,
-                 stride=8, d_model=128, n_heads=4, n_layers=3, n_vars=7):
-        super().__init__()
-        self.patch_len = patch_len
-        self.stride = stride
-        self.n_patches = (seq_len - patch_len) // stride + 1
-        self.n_vars = n_vars
+# PatchTST: patching + channel independence + Transformer
+config = PatchTSTConfig(
+    num_input_channels=7,       # multivariate: 7 channels
+    context_length=96,          # lookback window
+    prediction_length=24,       # forecast horizon
+    patch_length=16,            # each patch covers 16 time steps
+    patch_stride=8,             # 50% overlap -> (96-16)//8 + 1 = 11 patches
+    d_model=128,
+    num_attention_heads=4,
+    num_hidden_layers=3,
+    feedforward_dim=256,
+    dropout=0.1,
+    channel_attention=False,    # channel independence (key design choice)
+)
+model = PatchTSTForPrediction(config)
 
-        self.patch_embed = nn.Linear(patch_len, d_model)
-        self.pos_embed = nn.Parameter(torch.randn(1, self.n_patches, d_model) * 0.02)
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model, nhead=n_heads, dim_feedforward=256,
-            dropout=0.1, batch_first=True
-        )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
-        self.head = nn.Linear(self.n_patches * d_model, pred_len)
+# Input: (batch, seq_len, num_channels)
+past_values = torch.randn(8, 96, 7)
+outputs = model(past_values=past_values)
 
-    def forward(self, x):  # x: (B, C, L)
-        B, C, L = x.shape
-        # Channel independence: treat each channel as a batch element
-        x = x.reshape(B * C, L)
-        # Create patches
-        patches = x.unfold(dimension=-1, size=self.patch_len, step=self.stride)
-        z = self.patch_embed(patches) + self.pos_embed
-        z = self.encoder(z)
-        out = self.head(z.flatten(1))  # (B*C, pred_len)
-        return out.reshape(B, C, -1)
+print(f"Input: {past_values.shape}")           # [8, 96, 7]
+print(f"Forecast: {outputs.prediction_outputs.shape}")  # [8, 24, 7]
+print(f"Patches per channel: {(96 - 16) // 8 + 1}")  # 11 tokens
+print(f"Attention cost: 11^2 = 121 vs raw 96^2 = 9216 (76x reduction)")
 
-model = PatchTST(seq_len=96, pred_len=24, n_vars=7)
-x = torch.randn(8, 7, 96)
-print(f"Forecast: {model(x).shape}")  # (8, 7, 24)`}
+# Self-supervised pre-training: mask random patches
+config_ssl = PatchTSTConfig(
+    num_input_channels=7, context_length=96, patch_length=16,
+    patch_stride=8, d_model=128, num_attention_heads=4,
+    num_hidden_layers=3, mask_type="random", random_mask_ratio=0.4,
+)
+# Use PatchTSTForPretraining for masked patch reconstruction`}
       />
 
       <NoteBlock type="note" title="Self-Supervised Pre-Training">

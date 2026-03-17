@@ -91,40 +91,40 @@ export default function Pose2D() {
       </ExampleBlock>
 
       <PythonCode
-        title="HRNet Pose Estimation"
-        code={`import torch
-import torch.nn as nn
+        title="2D Pose Estimation with MMPose"
+        code={`# MMPose: comprehensive pose estimation toolkit
+from mmpose.apis import MMPoseInferencer
+import numpy as np
 
-class SimpleHeatmapHead(nn.Module):
-    """Heatmap prediction head for pose estimation."""
-    def __init__(self, in_channels=256, num_keypoints=17):
-        super().__init__()
-        self.deconv = nn.Sequential(
-            nn.ConvTranspose2d(in_channels, 256, 4, stride=2, padding=1),
-            nn.BatchNorm2d(256), nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(256, 256, 4, stride=2, padding=1),
-            nn.BatchNorm2d(256), nn.ReLU(inplace=True),
-        )
-        self.head = nn.Conv2d(256, num_keypoints, 1)
+# Top-down pose estimation with HRNet (state-of-the-art)
+inferencer = MMPoseInferencer(
+    pose2d="td-hm_hrnet-w48_8xb32-210e_coco-256x192",
+    det_model="rtmdet",  # person detector
+)
 
-    def forward(self, x):
-        x = self.deconv(x)
-        heatmaps = self.head(x)  # (B, K, H, W)
-        return heatmaps
+# Run inference on an image
+result = next(inferencer("test_image.jpg", show=False))
+predictions = result["predictions"][0]  # first person
+keypoints = predictions["keypoints"]     # (17, 2) xy coords
+scores = predictions["keypoint_scores"]  # (17,) confidence
 
-def decode_heatmaps(heatmaps):
-    """Get keypoint coordinates from heatmaps."""
-    B, K, H, W = heatmaps.shape
-    flat = heatmaps.view(B, K, -1)
-    max_idx = flat.argmax(dim=2)
-    y = max_idx // W
-    x = max_idx % W
-    conf = flat.max(dim=2).values
-    return torch.stack([x, y, conf], dim=2)  # (B, K, 3)
+# COCO 17 keypoints: nose, eyes, ears, shoulders, elbows,
+# wrists, hips, knees, ankles
+coco_names = ["nose", "left_eye", "right_eye", "left_ear",
+              "right_ear", "left_shoulder", "right_shoulder",
+              "left_elbow", "right_elbow", "left_wrist",
+              "right_wrist", "left_hip", "right_hip",
+              "left_knee", "right_knee", "left_ankle", "right_ankle"]
+for name, kp, s in zip(coco_names, keypoints, scores):
+    print(f"{name:>15}: ({kp[0]:.1f}, {kp[1]:.1f}) conf={s:.2f}")
 
-# Loss: MSE between predicted and target heatmaps
-criterion = nn.MSELoss()
-loss = criterion(pred_heatmaps, target_heatmaps)`}
+# Alternative: MediaPipe for real-time (33 keypoints, runs on CPU)
+import mediapipe as mp
+pose = mp.solutions.pose.Pose(static_image_mode=True)
+# result = pose.process(rgb_image)
+# landmarks = result.pose_landmarks  # 33 body landmarks
+print("MMPose: research-grade accuracy (77+ AP on COCO)")
+print("MediaPipe: real-time on mobile/edge devices")`}
       />
 
       <NoteBlock type="note" title="High-Resolution Networks (HRNet)">

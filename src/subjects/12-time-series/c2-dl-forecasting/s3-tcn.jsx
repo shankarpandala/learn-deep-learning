@@ -80,44 +80,49 @@ export default function TemporalCNNs() {
       </ExampleBlock>
 
       <PythonCode
-        title="TCN Residual Block in PyTorch"
-        code={`import torch
-import torch.nn as nn
+        title="TCN Forecasting with Darts"
+        code={`from darts import TimeSeries
+from darts.models import TCNModel
+from darts.dataprocessing.transformers import Scaler
+import numpy as np
+import pandas as pd
 
-class TCNBlock(nn.Module):
-    def __init__(self, channels, kernel_size=3, dilation=1, dropout=0.1):
-        super().__init__()
-        pad = (kernel_size - 1) * dilation  # causal padding
-        self.conv1 = nn.Conv1d(channels, channels, kernel_size, dilation=dilation, padding=pad)
-        self.conv2 = nn.Conv1d(channels, channels, kernel_size, dilation=dilation, padding=pad)
-        self.norm1 = nn.BatchNorm1d(channels)
-        self.norm2 = nn.BatchNorm1d(channels)
-        self.drop = nn.Dropout(dropout)
-        self.pad = pad
+# Create sample time series
+dates = pd.date_range("2020-01-01", periods=500, freq="D")
+trend = np.linspace(0, 5, 500)
+seasonal = 3 * np.sin(2 * np.pi * np.arange(500) / 7)
+noise = np.random.randn(500) * 0.5
+values = trend + seasonal + noise
 
-    def forward(self, x):  # x: (B, C, T)
-        out = self.drop(torch.relu(self.norm1(self.conv1(x)[:, :, :x.size(2)])))
-        out = self.drop(torch.relu(self.norm2(self.conv2(out)[:, :, :x.size(2)])))
-        return torch.relu(out + x)  # residual connection
+series = TimeSeries.from_times_and_values(dates, values)
+train, val = series.split_before(0.8)
 
-class TCN(nn.Module):
-    def __init__(self, in_ch=1, hidden=64, layers=6, horizon=6):
-        super().__init__()
-        self.input_proj = nn.Conv1d(in_ch, hidden, 1)
-        self.blocks = nn.ModuleList([
-            TCNBlock(hidden, dilation=2**i) for i in range(layers)
-        ])
-        self.head = nn.Linear(hidden, horizon)
+# Scale data
+scaler = Scaler()
+train_scaled = scaler.fit_transform(train)
+val_scaled = scaler.transform(val)
 
-    def forward(self, x):  # x: (B, T, 1)
-        h = self.input_proj(x.transpose(1, 2))
-        for block in self.blocks:
-            h = block(h)
-        return self.head(h[:, :, -1])  # use last timestep
+# TCN: causal dilated convolutions for sequence modeling
+model = TCNModel(
+    input_chunk_length=30,        # lookback window
+    output_chunk_length=7,        # forecast horizon
+    kernel_size=3,                # conv kernel size
+    num_filters=64,               # channels per layer
+    dilation_base=2,              # exponential dilation
+    num_layers=4,                 # -> receptive field = 1 + 2*(2^4 - 1) = 31
+    dropout=0.1,
+    n_epochs=20,
+)
 
-model = TCN()
-x = torch.randn(8, 48, 1)
-print(f"Forecast shape: {model(x).shape}")  # (8, 6)`}
+model.fit(train_scaled)
+forecast = model.predict(n=len(val_scaled))
+forecast = scaler.inverse_transform(forecast)
+
+# Evaluate
+from darts.metrics import mape
+error = mape(val, forecast)
+print(f"TCN MAPE: {error:.2f}%")
+print(f"Receptive field: {1 + 2 * (2**4 - 1)} time steps")`}
       />
 
       <NoteBlock type="note" title="When to Choose TCN over RNN">

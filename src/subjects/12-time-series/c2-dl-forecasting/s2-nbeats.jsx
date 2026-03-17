@@ -87,36 +87,52 @@ export default function NBeatsNHits() {
       </ExampleBlock>
 
       <PythonCode
-        title="N-BEATS Block Implementation"
-        code={`import torch
-import torch.nn as nn
+        title="N-BEATS / N-HiTS with NeuralForecast"
+        code={`from neuralforecast import NeuralForecast
+from neuralforecast.models import NBEATS, NHITS
+from neuralforecast.losses.pytorch import MAE
+import pandas as pd
+import numpy as np
 
-class NBeatsBlock(nn.Module):
-    def __init__(self, lookback, horizon, hidden=256, basis_dim=8):
-        super().__init__()
-        self.fc = nn.Sequential(
-            nn.Linear(lookback, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
-        )
-        self.theta_b = nn.Linear(hidden, basis_dim)
-        self.theta_f = nn.Linear(hidden, basis_dim)
-        self.backcast_basis = nn.Linear(basis_dim, lookback)
-        self.forecast_basis = nn.Linear(basis_dim, horizon)
+# Prepare data in NeuralForecast format: unique_id, ds, y
+dates = pd.date_range("2020-01-01", periods=365, freq="D")
+series = []
+for i in range(50):
+    trend = np.linspace(0, 3, 365)
+    season = 2 * np.sin(2 * np.pi * np.arange(365) / 7)
+    y = trend + season + np.random.randn(365) * 0.5
+    df = pd.DataFrame({"unique_id": f"s{i}", "ds": dates, "y": y})
+    series.append(df)
+data = pd.concat(series).reset_index(drop=True)
 
-    def forward(self, x):  # x: (B, lookback)
-        h = self.fc(x)
-        backcast = self.backcast_basis(self.theta_b(h))
-        forecast = self.forecast_basis(self.theta_f(h))
-        return backcast, forecast
+horizon = 14
 
-# Stack of blocks with doubly residual connections
-block = NBeatsBlock(lookback=24, horizon=6)
-x = torch.randn(8, 24)
-bc, fc = block(x)
-residual = x - bc  # passed to next block
-print(f"Backcast: {bc.shape}, Forecast: {fc.shape}")`}
+# N-BEATS: interpretable stacks (trend + seasonality)
+nbeats = NBEATS(
+    h=horizon,
+    input_size=2 * horizon,       # lookback = 2x horizon
+    stack_types=["trend", "seasonality"],  # interpretable config
+    n_blocks=[3, 3],
+    mlp_units=[[256, 256]] * 2,
+    loss=MAE(),
+    max_steps=100,
+)
+
+# N-HiTS: hierarchical interpolation for long horizons
+nhits = NHITS(
+    h=horizon,
+    input_size=2 * horizon,
+    n_pool_kernel_size=[4, 2, 1],  # multi-rate downsampling
+    loss=MAE(),
+    max_steps=100,
+)
+
+# Train and forecast
+nf = NeuralForecast(models=[nbeats, nhits], freq="D")
+nf.fit(df=data)
+forecasts = nf.predict()
+print(forecasts.head())
+# Columns: unique_id, ds, NBEATS, NHITS`}
       />
 
       <NoteBlock type="note" title="N-BEATS vs N-HiTS Trade-offs">

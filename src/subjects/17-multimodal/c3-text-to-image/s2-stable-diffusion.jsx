@@ -70,41 +70,44 @@ export default function StableDiffusionLatentDiffusion() {
       </DefinitionBlock>
 
       <PythonCode
-        title="Latent Diffusion Sampling Loop"
-        code={`import torch
+        title="Stable Diffusion with Diffusers"
+        code={`from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
+import torch
 
-def sample_latent_diffusion(unet, scheduler, text_embeds, cfg_scale=7.5,
-                            num_steps=50, latent_shape=(1, 4, 64, 64)):
-    """Simplified Stable Diffusion sampling loop."""
-    device = text_embeds.device
-    # Start from pure noise
-    latents = torch.randn(latent_shape, device=device)
+# Load Stable Diffusion with optimized scheduler
+pipe = StableDiffusionPipeline.from_pretrained(
+    "stabilityai/stable-diffusion-2-1",
+    torch_dtype=torch.float16,
+)
+pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+    pipe.scheduler.config
+)  # 20-25 steps instead of 50 with DDPM
+pipe = pipe.to("cuda")
 
-    # Null text embedding for CFG
-    null_embeds = torch.zeros_like(text_embeds)
+# Text-to-image generation
+image = pipe(
+    prompt="A serene mountain landscape at sunset, oil painting style",
+    negative_prompt="blurry, low quality, distorted",
+    num_inference_steps=25,     # denoising steps
+    guidance_scale=7.5,         # CFG strength
+    height=512, width=512,
+).images[0]
+image.save("mountain.png")
 
-    scheduler.set_timesteps(num_steps)
-    for t in scheduler.timesteps:
-        # Duplicate latents for CFG (unconditional + conditional)
-        latent_input = torch.cat([latents, latents])
-        text_input = torch.cat([null_embeds, text_embeds])
+# Key components of the pipeline:
+# 1. Text encoder: CLIP ViT-L/14 (frozen) -> text embeddings
+# 2. VAE encoder/decoder: 8x spatial compression (512->64)
+# 3. U-Net: cross-attention conditioned denoising in latent space
+print(f"Latent space: 4x64x64 = {4*64*64:,} values")
+print(f"Pixel space:  3x512x512 = {3*512*512:,} values")
+print(f"Compression ratio: {3*512*512 / (4*64*64):.0f}x")
 
-        # Predict noise
-        noise_pred = unet(latent_input, t, encoder_hidden_states=text_input)
-        noise_uncond, noise_cond = noise_pred.chunk(2)
-
-        # Classifier-free guidance
-        noise_pred = noise_uncond + cfg_scale * (noise_cond - noise_uncond)
-
-        # Denoise one step
-        latents = scheduler.step(noise_pred, t, latents)
-
-    return latents  # Decode with VAE: images = vae.decode(latents)
-
-# Note: This is pseudocode — requires diffusers library for full execution
-print("Stable Diffusion: denoising in 64x64 latent space")
-print("  -> 8x compression from 512x512 pixel space")
-print("  -> ~60x less compute than pixel-space diffusion")`}
+# SDXL: latest version with dual text encoders + refiner
+from diffusers import StableDiffusionXLPipeline
+pipe_xl = StableDiffusionXLPipeline.from_pretrained(
+    "stabilityai/stable-diffusion-xl-base-1.0",
+    torch_dtype=torch.float16, variant="fp16",
+)`}
       />
 
       <ExampleBlock title="Compute Savings from Latent Space">

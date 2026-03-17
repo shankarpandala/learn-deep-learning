@@ -81,31 +81,34 @@ export default function CLIPArchitecture() {
       </ExampleBlock>
 
       <PythonCode
-        title="CLIP-Style Contrastive Loss"
-        code={`import torch
-import torch.nn.functional as F
+        title="CLIP with OpenCLIP / HuggingFace"
+        code={`import open_clip
+import torch
+from PIL import Image
 
-def clip_loss(image_embeds, text_embeds, temperature=0.07):
-    """Symmetric contrastive loss for CLIP."""
-    # Normalize embeddings
-    image_embeds = F.normalize(image_embeds, dim=-1)
-    text_embeds = F.normalize(text_embeds, dim=-1)
+# OpenCLIP: open-source CLIP with many model variants
+model, preprocess_train, preprocess_val = open_clip.create_model_and_transforms(
+    "ViT-B-32", pretrained="laion2b_s34b_b79k"
+)
+tokenizer = open_clip.get_tokenizer("ViT-B-32")
 
-    # Cosine similarity matrix [N, N]
-    logits = image_embeds @ text_embeds.T / temperature
+# Encode images and text into shared embedding space
+image = preprocess_val(Image.new("RGB", (224, 224))).unsqueeze(0)
+text = tokenizer(["a photo of a cat", "a photo of a dog", "a diagram of a neural network"])
 
-    # Symmetric cross-entropy loss
-    N = logits.shape[0]
-    labels = torch.arange(N, device=logits.device)
-    loss_i2t = F.cross_entropy(logits, labels)
-    loss_t2i = F.cross_entropy(logits.T, labels)
-    return (loss_i2t + loss_t2i) / 2
+with torch.no_grad():
+    img_features = model.encode_image(image)       # [1, 512]
+    txt_features = model.encode_text(text)          # [3, 512]
+    # Normalize for cosine similarity
+    img_features /= img_features.norm(dim=-1, keepdim=True)
+    txt_features /= txt_features.norm(dim=-1, keepdim=True)
+    # Zero-shot classification via similarity
+    similarity = (100.0 * img_features @ txt_features.T).softmax(dim=-1)
+    print(f"Similarities: {similarity}")  # highest for best match
 
-# Example: batch of 8 image-text pairs, 512-dim embeddings
-img_emb = torch.randn(8, 512)
-txt_emb = torch.randn(8, 512)
-loss = clip_loss(img_emb, txt_emb)
-print(f"CLIP loss: {loss.item():.4f}")`}
+# Available models span ViT-B to ViT-bigG (up to 2.5B params)
+print(f"Model params: {sum(p.numel() for p in model.parameters()) / 1e6:.0f}M")
+print(open_clip.list_pretrained()[:5])  # many pretrained checkpoints`}
       />
 
       <NoteBlock type="note" title="Dual Encoder Architecture">

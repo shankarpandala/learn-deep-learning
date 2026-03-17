@@ -76,38 +76,35 @@ export default function TacotronVocoders() {
       </DefinitionBlock>
 
       <PythonCode
-        title="TTS Inference with Tacotron 2 + HiFi-GAN"
-        code={`import torch
+        title="TTS with Coqui TTS (Tacotron 2 + HiFi-GAN)"
+        code={`from TTS.api import TTS
+import torch
 
-# Tacotron 2 model (simplified structure)
-class SimpleTacotron2(torch.nn.Module):
-    def __init__(self, vocab_size=80, mel_dim=80, hidden=512):
-        super().__init__()
-        self.embedding = torch.nn.Embedding(vocab_size, hidden)
-        self.encoder = torch.nn.LSTM(hidden, hidden // 2, batch_first=True, bidirectional=True)
-        self.decoder = torch.nn.LSTMCell(mel_dim + hidden, hidden)
-        self.mel_proj = torch.nn.Linear(hidden, mel_dim)
-        self.stop_proj = torch.nn.Linear(hidden, 1)
+# Coqui TTS: production-ready Tacotron 2 + vocoder pipeline
+# List available models (Tacotron2, VITS, etc.)
+print(TTS().list_models()[:5])
 
-    def forward(self, text_ids, max_steps=200):
-        enc_out, _ = self.encoder(self.embedding(text_ids))
-        # Simplified: use mean context (real model uses attention)
-        context = enc_out.mean(dim=1)
-        mel_input = torch.zeros(text_ids.size(0), 80)
-        h = torch.zeros(text_ids.size(0), 512)
-        c = torch.zeros_like(h)
-        mels = []
-        for _ in range(max_steps):
-            h, c = self.decoder(torch.cat([mel_input, context], -1), (h, c))
-            mel_frame = self.mel_proj(h)
-            mels.append(mel_frame)
-            mel_input = mel_frame
-        return torch.stack(mels, dim=1)  # [B, T, 80]
+# Load pre-trained Tacotron 2 with HiFi-GAN vocoder
+tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC_ph")
 
-model = SimpleTacotron2()
-text = torch.randint(0, 80, (1, 20))
-mel_out = model(text)
-print(f"Generated mel: {mel_out.shape}")  # [1, 200, 80]`}
+# Synthesize speech from text
+wav = tts.tts(text="Hello world, this is Tacotron 2 with neural vocoding.")
+print(f"Generated audio: {len(wav)} samples at 22050 Hz")
+print(f"Duration: {len(wav) / 22050:.2f} seconds")
+
+# Save to file
+tts.tts_to_file(
+    text="Deep learning has revolutionized speech synthesis.",
+    file_path="output.wav",
+)
+
+# Multi-speaker TTS (with speaker embeddings)
+tts_multi = TTS(model_name="tts_models/en/vctk/vits")
+wav = tts_multi.tts(
+    text="Each speaker has a learned embedding vector.",
+    speaker="p225",  # VCTK speaker ID
+)
+print(f"Multi-speaker output: {len(wav)} samples")`}
       />
 
       <WarningBlock title="Attention Alignment Issues">

@@ -107,46 +107,39 @@ export default function FCNUNet() {
       </ExampleBlock>
 
       <PythonCode
-        title="Simple U-Net in PyTorch"
-        code={`import torch
-import torch.nn as nn
+        title="Segmentation with segmentation_models_pytorch"
+        code={`import segmentation_models_pytorch as smp
+import torch
 
-class UNetBlock(nn.Module):
-    def __init__(self, in_ch, out_ch):
-        super().__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, 3, padding=1, bias=False),
-            nn.BatchNorm2d(out_ch), nn.ReLU(inplace=True),
-            nn.Conv2d(out_ch, out_ch, 3, padding=1, bias=False),
-            nn.BatchNorm2d(out_ch), nn.ReLU(inplace=True))
+# U-Net with pretrained ResNet34 encoder (transfer learning)
+model = smp.Unet(
+    encoder_name="resnet34",
+    encoder_weights="imagenet",   # pretrained backbone
+    in_channels=3,
+    classes=21,                   # e.g., Pascal VOC classes
+    decoder_channels=(256, 128, 64, 32, 16),
+)
 
-    def forward(self, x):
-        return self.conv(x)
-
-class MiniUNet(nn.Module):
-    def __init__(self, n_classes=21):
-        super().__init__()
-        self.enc1 = UNetBlock(3, 64)
-        self.enc2 = UNetBlock(64, 128)
-        self.pool = nn.MaxPool2d(2)
-        self.bottleneck = UNetBlock(128, 256)
-        self.up2 = nn.ConvTranspose2d(256, 128, 2, stride=2)
-        self.dec2 = UNetBlock(256, 128)  # 128+128 from skip
-        self.up1 = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.dec1 = UNetBlock(128, 64)
-        self.head = nn.Conv2d(64, n_classes, 1)
-
-    def forward(self, x):
-        e1 = self.enc1(x)
-        e2 = self.enc2(self.pool(e1))
-        b = self.bottleneck(self.pool(e2))
-        d2 = self.dec2(torch.cat([self.up2(b), e2], dim=1))
-        d1 = self.dec1(torch.cat([self.up1(d2), e1], dim=1))
-        return self.head(d1)
-
-model = MiniUNet(n_classes=21)
 x = torch.randn(1, 3, 256, 256)
-print(f"Output: {model(x).shape}")  # [1, 21, 256, 256]`}
+output = model(x)
+print(f"Input: {x.shape} -> Segmentation: {output.shape}")
+# [1, 21, 256, 256] - per-pixel class logits
+
+# Other architectures available out of the box:
+unet_pp = smp.UnetPlusPlus(encoder_name="efficientnet-b4", classes=21)
+deeplabv3 = smp.DeepLabV3Plus(encoder_name="resnet50", classes=21)
+fpn = smp.FPN(encoder_name="resnet34", classes=21)
+
+# Built-in losses and metrics
+loss_fn = smp.losses.DiceLoss(mode="multiclass")
+pred = model(x)
+target = torch.randint(0, 21, (1, 256, 256))
+loss = loss_fn(pred, target)
+print(f"Dice loss: {loss.item():.4f}")
+
+# 400+ encoder variants: ResNet, EfficientNet, ViT, MiT, etc.
+print(f"Available encoders: {len(smp.encoders.get_encoder_names())}")
+print(f"Model params: {sum(p.numel() for p in model.parameters())/1e6:.1f}M")`}
       />
 
       <NoteBlock type="note" title="U-Net in Medical Imaging">

@@ -76,57 +76,49 @@ export default function MambaSelectiveSSM() {
       </ExampleBlock>
 
       <PythonCode
-        title="Mamba Selective Scan (Simplified)"
-        code={`import torch
-import torch.nn as nn
-import torch.nn.functional as F
+        title="Mamba with mamba-ssm Library"
+        code={`from mamba_ssm import Mamba, Mamba2
+import torch
 
-class SimpleMambaBlock(nn.Module):
-    """Simplified Mamba block with selective state space."""
-    def __init__(self, d_model=256, d_state=16, d_conv=4):
-        super().__init__()
-        self.d_state = d_state
-        # Input projections
-        self.in_proj = nn.Linear(d_model, d_model * 2, bias=False)
-        self.conv1d = nn.Conv1d(d_model, d_model, d_conv, padding=d_conv-1, groups=d_model)
-        # Selection parameters (input-dependent)
-        self.x_proj = nn.Linear(d_model, d_state * 2 + 1, bias=False)  # B, C, dt
-        self.dt_proj = nn.Linear(1, d_model, bias=True)
-        # Fixed A (diagonal, log-parameterized)
-        self.A_log = nn.Parameter(torch.log(torch.arange(1, d_state + 1).float()))
+# Mamba: selective state space model with hardware-aware scan
+mamba_layer = Mamba(
+    d_model=256,    # model dimension
+    d_state=16,     # SSM state expansion factor (N in paper)
+    d_conv=4,       # local convolution width
+    expand=2,       # block expansion factor (E in paper)
+).to("cuda")
 
-    def forward(self, x):
-        B, L, D = x.shape
-        xz = self.in_proj(x)             # [B, L, 2D]
-        x_main, z = xz.chunk(2, dim=-1)  # each [B, L, D]
+x = torch.randn(2, 128, 256).to("cuda")  # (batch, seq_len, d_model)
+y = mamba_layer(x)
+print(f"Mamba: {x.shape} -> {y.shape}")  # same shape
 
-        # Causal conv1d
-        x_main = self.conv1d(x_main.transpose(1, 2))[:, :, :L].transpose(1, 2)
-        x_main = F.silu(x_main)
+# Mamba-2: improved with structured state space duality (SSD)
+mamba2_layer = Mamba2(
+    d_model=256,
+    d_state=64,     # larger state in Mamba-2
+    d_conv=4,
+    expand=2,
+    headdim=64,     # SSD head dimension
+).to("cuda")
+y2 = mamba2_layer(x)
+print(f"Mamba-2: {x.shape} -> {y2.shape}")
 
-        # Input-dependent parameters
-        x_proj = self.x_proj(x_main)
-        B_t = x_proj[:, :, :self.d_state]         # [B, L, N]
-        C_t = x_proj[:, :, self.d_state:2*self.d_state]  # [B, L, N]
-        dt = F.softplus(x_proj[:, :, -1:])         # [B, L, 1]
+# Full model: stack Mamba blocks like Transformer layers
+from mamba_ssm.models.mixer_seq_simple import MambaLMHeadModel
+model = MambaLMHeadModel(
+    d_model=768,
+    n_layer=24,
+    vocab_size=50277,
+    ssm_cfg={"d_state": 16, "d_conv": 4, "expand": 2},
+).to("cuda")
 
-        # Selective scan (sequential for clarity)
-        A = -torch.exp(self.A_log)                  # [N]
-        h = torch.zeros(B, D, self.d_state, device=x.device)
-        ys = []
-        for t in range(L):
-            A_bar = torch.exp(dt[:, t] * A)         # [B, 1] * [N] -> [B, N]
-            h = h * A_bar.unsqueeze(1) + x_main[:, t, :, None] * B_t[:, t, None, :]
-            y_t = (h * C_t[:, t, None, :]).sum(-1)  # [B, D]
-            ys.append(y_t)
-
-        y = torch.stack(ys, dim=1)                  # [B, L, D]
-        return y * F.silu(z)                        # Gated output
-
-mamba = SimpleMambaBlock(d_model=256, d_state=16)
-x = torch.randn(2, 128, 256)
-out = mamba(x)
-print(f"Input: {x.shape} -> Output: {out.shape}")`}
+# Efficient autoregressive generation (constant memory per step)
+input_ids = torch.randint(0, 50277, (1, 64)).to("cuda")
+out = model(input_ids)
+print(f"LM logits: {out.logits.shape}")  # [1, 64, 50277]
+# Generation: O(DN) per token — no KV cache growth!
+params = sum(p.numel() for p in model.parameters()) / 1e6
+print(f"Model size: {params:.0f}M parameters")`}
       />
 
       <NoteBlock type="note" title="Hardware-Aware Algorithm">

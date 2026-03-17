@@ -74,7 +74,7 @@ export default function DINO() {
         <p>DINO uses asymmetric crops to create a local-to-global correspondence:</p>
         <ul className="list-disc ml-5 mt-2 space-y-1">
           <li><strong>2 global views</strong> (224x224, covering >50% of image): processed by both student and teacher</li>
-          <li><strong>N local views</strong> (96x96, covering <50%): processed only by student</li>
+          <li><strong>N local views</strong> (96x96, covering &lt;50%): processed only by student</li>
         </ul>
         <p className="mt-2">
           The student must predict the teacher's global view output from local crops, encouraging

@@ -110,6 +110,16 @@ print(f"Params: {sum(p.numel() for p in lstm.parameters()):,}")
           This is exactly 4 times a vanilla RNN of the same hidden size.
         </p>
       </NoteBlock>
+
+      <ExampleBlock title="Gate Values in Practice">
+        <p>
+          During training on language modeling tasks, forget gates typically learn values
+          close to 1 (remembering most information), while input and output gates show
+          more variation. The forget gate bias is commonly initialized to 1.0 (Gers et al., 2000)
+          to encourage information flow early in training.
+        </p>
+        <BlockMath math="f_t \approx 0.9,\quad i_t \in [0.1, 0.8],\quad o_t \in [0.3, 0.9]" />
+      </ExampleBlock>
     </div>
   )
 }

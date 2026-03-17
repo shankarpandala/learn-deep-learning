@@ -114,6 +114,14 @@ print(f"GRU / LSTM:  {gru_params/lstm_params:.2%}")  # ~75%
           LSTM or GRU and only try variants if you have a specific bottleneck.
         </p>
       </NoteBlock>
+
+      <ExampleBlock title="Practical Recommendation">
+        <p>
+          Begin with a standard LSTM with forget bias = 1.0. If you need fewer parameters or
+          faster training, switch to a GRU. Only explore peephole or coupled-gate variants if
+          you have evidence from ablation studies on your specific task that they help.
+        </p>
+      </ExampleBlock>
     </div>
   )
 }

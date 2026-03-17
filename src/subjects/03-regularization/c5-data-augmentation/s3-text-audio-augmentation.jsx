@@ -72,19 +72,13 @@ function SpecAugmentViz() {
         ))}
       </div>
       <svg width={W} height={H} className="mx-auto block">
-        {Array.from({ length: rows }, (_, r) =>
-          Array.from({ length: cols }, (_, c) => {
-            const intensity = Math.sin(r * 0.5 + c * 0.2) * 0.3 + 0.5 + Math.sin(c * 0.4) * 0.2
-            const isMasked = (
-              ((maskType === 'freq' || maskType === 'both') && r >= freqMask.start && r <= freqMask.end) ||
-              ((maskType === 'time' || maskType === 'both') && c >= timeMask.start && c <= timeMask.end)
-            )
-            const color = isMasked ? '#1f2937' : `hsl(263, ${Math.round(intensity * 70 + 20)}%, ${Math.round(intensity * 40 + 30)}%)`
-            return <rect key={`${r}${c}`} x={c * cellW} y={r * cellH} width={cellW} height={cellH} fill={color} />
-          })
-        )}
-        <text x={5} y={H - 5} fontSize={9} fill="#6b7280">Time</text>
-        <text x={5} y={12} fontSize={9} fill="#6b7280">Freq</text>
+        {Array.from({ length: rows }, (_, r) => Array.from({ length: cols }, (_, c) => {
+          const v = Math.sin(r * 0.5 + c * 0.2) * 0.3 + 0.5 + Math.sin(c * 0.4) * 0.2
+          const masked = ((maskType !== 'time' && r >= freqMask.start && r <= freqMask.end) ||
+            (maskType !== 'freq' && c >= timeMask.start && c <= timeMask.end))
+          return <rect key={`${r}${c}`} x={c * cellW} y={r * cellH} width={cellW} height={cellH}
+            fill={masked ? '#1f2937' : `hsl(263,${Math.round(v * 70 + 20)}%,${Math.round(v * 40 + 30)}%)`} />
+        }))}
       </svg>
     </div>
   )
@@ -94,9 +88,8 @@ export default function TextAudioAugmentation() {
   return (
     <div className="space-y-6">
       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-        While image augmentation has well-established techniques, text and audio domains
-        require specialized approaches that respect the discrete nature of language and
-        the spectral structure of audio.
+        Text and audio domains require specialized augmentation approaches that respect
+        the discrete nature of language and the spectral structure of audio.
       </p>
 
       <DefinitionBlock title="Text Augmentation Techniques">
@@ -126,8 +119,7 @@ export default function TextAudioAugmentation() {
       <ExampleBlock title="SpecAugment Results">
         <p>
           SpecAugment reduced word error rate on LibriSpeech from 3.9% to 2.8% without
-          any additional data or language model. Frequency masking encourages robustness
-          to speaker variation, while time masking handles temporal distortions.
+          additional data. Frequency masking provides speaker robustness; time masking handles temporal distortions.
         </p>
       </ExampleBlock>
 

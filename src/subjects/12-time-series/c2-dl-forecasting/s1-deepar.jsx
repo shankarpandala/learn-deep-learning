@@ -78,32 +78,46 @@ export default function DeepARProbabilisticForecasting() {
       </ExampleBlock>
 
       <PythonCode
-        title="DeepAR-Style Probabilistic Forecaster"
-        code={`import torch
-import torch.nn as nn
+        title="DeepAR with GluonTS"
+        code={`from gluonts.torch.model.deepar import DeepAREstimator
+from gluonts.dataset.pandas import PandasDataset
+import pandas as pd
+import numpy as np
 
-class SimpleDeepAR(nn.Module):
-    def __init__(self, input_dim=1, hidden=64, num_layers=2):
-        super().__init__()
-        self.lstm = nn.LSTM(input_dim, hidden, num_layers, batch_first=True)
-        self.mu_head = nn.Linear(hidden, 1)
-        self.sigma_head = nn.Sequential(nn.Linear(hidden, 1), nn.Softplus())
+# Create sample time series dataset (e.g., 100 daily series)
+freq = "D"
+prediction_length = 14
+dates = pd.date_range("2020-01-01", periods=365, freq=freq)
+# Simulate multiple related series (DeepAR learns across all)
+dataframes = []
+for i in range(100):
+    trend = np.linspace(0, 2, 365) + np.random.randn() * 0.5
+    seasonal = 2 * np.sin(2 * np.pi * np.arange(365) / 7)
+    noise = np.random.randn(365) * 0.3
+    df = pd.DataFrame({"target": trend + seasonal + noise}, index=dates)
+    df["item_id"] = f"series_{i}"
+    dataframes.append(df)
+dataset = PandasDataset(pd.concat(dataframes), target="target", item_id="item_id")
 
-    def forward(self, x):  # x: (B, T, 1)
-        h, _ = self.lstm(x)
-        mu = self.mu_head(h)        # (B, T, 1)
-        sigma = self.sigma_head(h)  # (B, T, 1), always positive
-        return mu, sigma
+# DeepAR: autoregressive RNN with learned likelihood
+estimator = DeepAREstimator(
+    freq=freq,
+    prediction_length=prediction_length,
+    num_layers=2,              # LSTM layers
+    hidden_size=40,            # Hidden units per layer
+    dropout_rate=0.1,
+    trainer_kwargs={"max_epochs": 5, "accelerator": "auto"},
+)
 
-    def loss(self, x):
-        mu, sigma = self.forward(x[:, :-1, :])  # teacher forcing
-        target = x[:, 1:, :]
-        nll = torch.log(sigma) + 0.5 * ((target - mu) / sigma)**2
-        return nll.mean()
+# Train global model across all 100 series
+predictor = estimator.train(dataset)
 
-model = SimpleDeepAR()
-x = torch.randn(16, 48, 1)  # batch=16, seq=48
-print(f"NLL loss: {model.loss(x).item():.4f}")`}
+# Generate probabilistic forecasts (returns sample paths)
+forecasts = list(predictor.predict(dataset))
+fc = forecasts[0]
+print(f"Forecast shape: {fc.samples.shape}")  # (num_samples, 14)
+print(f"Mean forecast: {fc.mean[:3]}")
+print(f"Quantile 0.9:  {fc.quantile(0.9)[:3]}")`}
       />
 
       <NoteBlock type="note" title="Multi-Series Training">

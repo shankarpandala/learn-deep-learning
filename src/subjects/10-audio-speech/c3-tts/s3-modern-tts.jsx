@@ -93,40 +93,34 @@ export default function ModernTTS() {
       </ExampleBlock>
 
       <PythonCode
-        title="VITS-style End-to-End TTS (Simplified)"
-        code={`import torch
-import torch.nn as nn
+        title="Modern TTS with VITS (Coqui TTS)"
+        code={`from TTS.api import TTS
+import torch
 
-class SimpleVITS(nn.Module):
-    def __init__(self, vocab_size=100, hidden=192, latent=192):
-        super().__init__()
-        # Text encoder
-        self.text_enc = nn.Sequential(
-            nn.Embedding(vocab_size, hidden),
-            nn.Linear(hidden, hidden),
-            nn.ReLU(),
-        )
-        # Prior: text -> latent distribution (with flow)
-        self.prior_mean = nn.Linear(hidden, latent)
-        self.prior_logvar = nn.Linear(hidden, latent)
-        # Decoder: latent -> waveform (simplified)
-        self.decoder = nn.ConvTranspose1d(latent, 1, kernel_size=256, stride=256)
+# VITS: end-to-end TTS (VAE + Flow + GAN, no separate vocoder)
+tts = TTS(model_name="tts_models/en/ljspeech/vits")
 
-    def forward(self, text_ids):
-        h = self.text_enc(text_ids)
-        mu = self.prior_mean(h)
-        logvar = self.prior_logvar(h)
-        # Reparameterization trick
-        z = mu + torch.randn_like(mu) * (0.5 * logvar).exp()
-        # Generate waveform from latent (real VITS uses HiFi-GAN decoder)
-        waveform = self.decoder(z.transpose(1, 2))
-        return waveform, mu, logvar
+# Single-step inference: text -> waveform (no mel intermediate)
+wav = tts.tts("VITS combines variational inference with adversarial training.")
+print(f"VITS output: {len(wav)} samples ({len(wav)/22050:.2f}s)")
 
-model = SimpleVITS()
-text = torch.randint(0, 100, (1, 30))
-waveform, mu, logvar = model(text)
-print(f"Generated waveform: {waveform.shape}")  # [1, 1, 30*256]
-print(f"Latent mean: {mu.shape}")  # [1, 30, 192]`}
+# Zero-shot voice cloning with YourTTS
+tts_clone = TTS(model_name="tts_models/multilingual/multi-dataset/your_tts")
+wav = tts_clone.tts(
+    text="I can speak in any voice from a short reference clip.",
+    speaker_wav="reference_audio.wav",  # 3-10s reference
+    language="en",
+)
+
+# XTTS v2: latest codec-based model with streaming support
+tts_xtts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
+wav = tts_xtts.tts(
+    text="This model uses neural audio codecs for high quality.",
+    speaker_wav="reference_audio.wav",
+    language="en",
+)
+print(f"XTTS output: {len(wav)} samples")
+print("Supports: 17 languages, voice cloning, streaming inference")`}
       />
 
       <NoteBlock type="note" title="The Codec Language Model Paradigm">

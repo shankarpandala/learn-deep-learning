@@ -75,52 +75,43 @@ export default function VoiceConversion() {
       </ExampleBlock>
 
       <PythonCode
-        title="Simple Voice Conversion with Disentanglement"
-        code={`import torch
-import torch.nn as nn
+        title="Voice Conversion with OpenVoice / so-vits-svc"
+        code={`# OpenVoice: instant voice cloning and conversion
+# pip install openvoice-cli
+from openvoice.api import BaseSpeakerTTS, ToneColorConverter
+import torch
 
-class SimpleVoiceConverter(nn.Module):
-    def __init__(self, mel_dim=80, content_dim=32, spk_dim=192):
-        super().__init__()
-        # Content encoder (bottleneck forces content-only)
-        self.content_enc = nn.Sequential(
-            nn.Conv1d(mel_dim, 256, 5, padding=2), nn.ReLU(),
-            nn.Conv1d(256, 128, 5, padding=2), nn.ReLU(),
-            nn.Conv1d(128, content_dim, 1),  # bottleneck
-        )
-        # Decoder: content + speaker -> mel
-        self.decoder = nn.Sequential(
-            nn.Conv1d(content_dim + spk_dim, 256, 5, padding=2), nn.ReLU(),
-            nn.Conv1d(256, 256, 5, padding=2), nn.ReLU(),
-            nn.Conv1d(256, mel_dim, 1),
-        )
+# Step 1: Generate base speech in any language
+base_tts = BaseSpeakerTTS(config_path="config.json", device="cuda")
+base_tts.tts(
+    text="Voice conversion preserves content, changes identity.",
+    output_path="base_speech.wav",
+    speaker="default",
+)
 
-    def encode_content(self, mel):
-        return self.content_enc(mel)
+# Step 2: Convert tone color to match target speaker
+converter = ToneColorConverter(config_path="converter_config.json")
+# Extract target speaker embedding from reference audio
+target_se = converter.extract_se("target_speaker.wav")
+# Apply voice conversion
+converter.convert(
+    audio_src_path="base_speech.wav",
+    src_se=converter.extract_se("base_speech.wav"),
+    tgt_se=target_se,
+    output_path="converted.wav",
+)
 
-    def decode(self, content, spk_emb):
-        # Expand speaker embedding to match time dimension
-        spk = spk_emb.unsqueeze(-1).expand(-1, -1, content.size(-1))
-        return self.decoder(torch.cat([content, spk], dim=1))
-
-    def convert(self, source_mel, target_spk_emb):
-        content = self.encode_content(source_mel)
-        return self.decode(content, target_spk_emb)
-
-model = SimpleVoiceConverter()
-source_mel = torch.randn(1, 80, 200)  # source utterance
-target_spk = torch.randn(1, 192)      # target speaker embedding
-
-# Voice conversion
-converted = model.convert(source_mel, target_spk)
-print(f"Source mel: {source_mel.shape}")
-print(f"Converted mel: {converted.shape}")  # [1, 80, 200]
-
-# Self-reconstruction for training
-source_spk = torch.randn(1, 192)
-reconstructed = model.convert(source_mel, source_spk)
-recon_loss = nn.functional.mse_loss(reconstructed, source_mel)
-print(f"Reconstruction loss: {recon_loss.item():.4f}")`}
+# Alternative: FreeVC (HuBERT content + speaker embedding)
+# Uses self-supervised features for natural disentanglement
+from speechbrain.inference.speaker import EncoderClassifier
+spk_model = EncoderClassifier.from_hparams(
+    source="speechbrain/spkrec-ecapa-voxceleb"
+)
+# HuBERT layer 12 -> content features (speaker-invariant)
+# ECAPA-TDNN -> speaker embedding (content-invariant)
+# Decoder: content + speaker -> converted waveform
+print("FreeVC disentangles content (HuBERT) from speaker (ECAPA)")
+print("No parallel data needed, zero-shot voice conversion")`}
       />
 
       <WarningBlock title="Ethical Considerations">

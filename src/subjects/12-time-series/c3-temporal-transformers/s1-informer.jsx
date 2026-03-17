@@ -79,43 +79,54 @@ export default function InformerAutoformer() {
       </ExampleBlock>
 
       <PythonCode
-        title="Simplified ProbSparse Attention"
-        code={`import torch
-import torch.nn as nn
-import math
+        title="Informer / Autoformer with HuggingFace"
+        code={`from transformers import (
+    InformerConfig, InformerForPrediction,
+    AutoformerConfig, AutoformerForPrediction,
+)
+import torch
 
-class ProbSparseAttention(nn.Module):
-    def __init__(self, d_model=64, n_heads=4, factor=5):
-        super().__init__()
-        self.d_k = d_model // n_heads
-        self.n_heads = n_heads
-        self.factor = factor
-        self.W_q = nn.Linear(d_model, d_model)
-        self.W_k = nn.Linear(d_model, d_model)
-        self.W_v = nn.Linear(d_model, d_model)
+# Informer: ProbSparse attention + distilling encoder
+config = InformerConfig(
+    prediction_length=24,
+    context_length=96,
+    input_size=7,               # number of variates
+    d_model=64,
+    encoder_layers=2,
+    decoder_layers=1,
+    encoder_attention_heads=4,
+    lags_sequence=[1, 7, 14],   # autoregressive lags
+    num_time_features=2,
+)
+informer = InformerForPrediction(config)
 
-    def forward(self, x):  # x: (B, L, D)
-        B, L, _ = x.shape
-        Q = self.W_q(x).view(B, L, self.n_heads, self.d_k).transpose(1, 2)
-        K = self.W_k(x).view(B, L, self.n_heads, self.d_k).transpose(1, 2)
-        V = self.W_v(x).view(B, L, self.n_heads, self.d_k).transpose(1, 2)
+# Autoformer: auto-correlation + series decomposition
+auto_config = AutoformerConfig(
+    prediction_length=24,
+    context_length=96,
+    input_size=7,
+    d_model=64,
+    encoder_layers=2,
+    decoder_layers=1,
+    moving_average=25,          # decomposition kernel
+    lags_sequence=[1, 7, 14],
+    num_time_features=2,
+)
+autoformer = AutoformerForPrediction(auto_config)
 
-        # Sparsity measurement: sample c*ln(L) keys
-        u = max(1, int(self.factor * math.log(L)))
-        idx = torch.randint(0, L, (u,))
-        K_sample = K[:, :, idx, :]
-        scores = torch.matmul(Q, K_sample.transpose(-2, -1)) / math.sqrt(self.d_k)
-        M = scores.max(-1).values - scores.mean(-1)  # sparsity measure
+# Simulated input (batch=2, context=96, 7 variates)
+past_values = torch.randn(2, 96, 7)
+past_time = torch.randn(2, 96, 2)  # time features
+future_time = torch.randn(2, 24, 2)
 
-        # Select top-u queries
-        top_u = min(u, L)
-        _, top_idx = M.topk(top_u, dim=-1)
-        # Full attention only for selected queries (simplified)
-        return V.mean(dim=2, keepdim=True).expand_as(Q)  # placeholder aggregation
-
-attn = ProbSparseAttention()
-x = torch.randn(2, 96, 64)
-print(f"Output: {attn(x).shape}")`}
+out = informer(
+    past_values=past_values,
+    past_time_features=past_time,
+    future_time_features=future_time,
+)
+print(f"Informer forecast params: {out.params.shape}")
+# SampleTSPredictionOutput contains distribution parameters
+print(f"  -> Generates 24-step probabilistic forecast for 7 variates")`}
       />
 
       <NoteBlock type="note" title="Informer vs Autoformer">

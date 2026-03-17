@@ -80,44 +80,45 @@ export default function AudioDiffusionModels() {
       </ExampleBlock>
 
       <PythonCode
-        title="Audio Generation with Diffusion (Simplified)"
-        code={`import torch
-import torch.nn as nn
+        title="Audio Generation with AudioCraft (Meta)"
+        code={`from audiocraft.models import AudioGen, MusicGen
+import torch
 
-class SimpleAudioUNet(nn.Module):
-    """Simplified U-Net for audio latent diffusion."""
-    def __init__(self, latent_dim=64, cond_dim=512, time_dim=256):
-        super().__init__()
-        self.time_mlp = nn.Sequential(
-            nn.Linear(1, time_dim), nn.SiLU(), nn.Linear(time_dim, time_dim)
-        )
-        self.cond_proj = nn.Linear(cond_dim, time_dim)
-        # Simplified encoder-decoder
-        self.encoder = nn.Conv1d(latent_dim, 128, 3, padding=1)
-        self.mid = nn.Conv1d(128, 128, 3, padding=1)
-        self.decoder = nn.Conv1d(128, latent_dim, 3, padding=1)
+# AudioGen: text-to-sound effects generation
+audiogen = AudioGen.get_pretrained("facebook/audiogen-medium")
+audiogen.set_generation_params(duration=5.0)  # 5 seconds
 
-    def forward(self, z_t, t, cond):
-        t_emb = self.time_mlp(t.unsqueeze(-1)) + self.cond_proj(cond)
-        h = self.encoder(z_t) + t_emb.unsqueeze(-1)
-        h = torch.relu(self.mid(h))
-        return self.decoder(h)
+# Generate sound effects from text descriptions
+descriptions = [
+    "A dog barking in a park",
+    "Thunder and heavy rain on a rooftop",
+]
+wav = audiogen.generate(descriptions)  # [2, 1, samples]
+print(f"AudioGen output: {wav.shape}")  # [2, 1, 80000] at 16kHz
 
-# Diffusion sampling loop
-model = SimpleAudioUNet()
-cond = torch.randn(1, 512)  # text embedding
-z_t = torch.randn(1, 64, 100)  # start from noise
-steps = 50
+# MusicGen: text-to-music generation with optional melody
+musicgen = MusicGen.get_pretrained("facebook/musicgen-small")
+musicgen.set_generation_params(
+    duration=8.0,           # 8 seconds of music
+    top_k=250,              # sampling parameter
+    cfg_coef=3.0,           # classifier-free guidance strength
+)
 
-for i in range(steps, 0, -1):
-    t = torch.tensor([i / steps])
-    with torch.no_grad():
-        noise_pred = model(z_t, t, cond)
-    # Simplified DDPM step
-    alpha = 1 - (i / steps) * 0.02
-    z_t = (z_t - (1 - alpha) * noise_pred) / alpha**0.5
+# Text-conditioned music generation
+music = musicgen.generate([
+    "An upbeat electronic track with synth leads",
+    "Soft acoustic guitar with gentle piano",
+])
+print(f"MusicGen output: {music.shape}")  # [2, 1, 256000] at 32kHz
 
-print(f"Denoised latent: {z_t.shape}")  # [1, 64, 100]`}
+# Melody-conditioned generation (MusicGen-melody)
+melody_model = MusicGen.get_pretrained("facebook/musicgen-melody")
+melody_wav, sr = torch.randn(1, 1, 32000 * 10), 32000  # reference
+music = melody_model.generate_with_chroma(
+    descriptions=["Jazz reinterpretation with saxophone"],
+    melody_wavs=melody_wav, melody_sample_rate=sr,
+)
+print(f"Melody-conditioned output: {music.shape}")`}
       />
 
       <WarningBlock title="Audio Diffusion Challenges">

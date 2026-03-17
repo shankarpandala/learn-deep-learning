@@ -106,43 +106,36 @@ export default function SpeakerEmbeddings() {
       </ExampleBlock>
 
       <PythonCode
-        title="Speaker Embedding Extraction"
-        code={`import torch
-import torch.nn as nn
+        title="Speaker Embeddings with SpeechBrain"
+        code={`from speechbrain.inference.speaker import EncoderClassifier
+import torch
+import torchaudio
 
-class SimpleSpeakerEncoder(nn.Module):
-    def __init__(self, input_dim=80, embed_dim=192):
-        super().__init__()
-        self.tdnn = nn.Sequential(
-            nn.Conv1d(input_dim, 512, 5, padding=2), nn.ReLU(),
-            nn.Conv1d(512, 512, 3, dilation=2, padding=2), nn.ReLU(),
-            nn.Conv1d(512, 512, 3, dilation=3, padding=3), nn.ReLU(),
-        )
-        # Attentive statistical pooling
-        self.attention = nn.Sequential(
-            nn.Linear(512, 128), nn.Tanh(), nn.Linear(128, 1)
-        )
-        self.embed = nn.Linear(1024, embed_dim)  # mean + std
+# ECAPA-TDNN: state-of-the-art speaker embedding model
+encoder = EncoderClassifier.from_hparams(
+    source="speechbrain/spkrec-ecapa-voxceleb",
+    savedir="pretrained_models/spkrec-ecapa",
+)
 
-    def forward(self, mel):  # mel: [B, 80, T]
-        h = self.tdnn(mel)  # [B, 512, T]
-        # Attention weights
-        alpha = self.attention(h.transpose(1, 2)).squeeze(-1)  # [B, T]
-        alpha = torch.softmax(alpha, dim=-1).unsqueeze(1)  # [B, 1, T]
-        # Weighted statistics
-        mean = (alpha * h).sum(dim=-1)
-        var = (alpha * h**2).sum(dim=-1) - mean**2
-        std = torch.sqrt(var.clamp(min=1e-9))
-        stats = torch.cat([mean, std], dim=-1)
-        return nn.functional.normalize(self.embed(stats), dim=-1)
+# Extract speaker embeddings from audio files
+# Returns 192-dim normalized embeddings
+emb1 = encoder.encode_batch(torch.randn(1, 16000))  # 1s audio
+emb2 = encoder.encode_batch(torch.randn(1, 16000))
+print(f"Embedding shape: {emb1.shape}")  # [1, 1, 192]
 
-model = SimpleSpeakerEncoder()
-mel = torch.randn(4, 80, 200)
-embeddings = model(mel)
-print(f"Speaker embeddings: {embeddings.shape}")  # [4, 192]
-# Cosine similarity between speakers
-sim = torch.mm(embeddings, embeddings.T)
-print(f"Similarity matrix:\\n{sim}")`}
+# Speaker verification via cosine similarity
+from speechbrain.utils.metric_stats import EER
+similarity = torch.nn.CosineSimilarity(dim=-1)
+score = similarity(emb1.squeeze(), emb2.squeeze())
+print(f"Cosine similarity: {score.item():.4f}")
+# Threshold ~0.25 for verification (EER on VoxCeleb1: 0.80%)
+
+# Alternative: Resemblyzer (lightweight, easy to use)
+from resemblyzer import VoiceEncoder, preprocess_wav
+voice_encoder = VoiceEncoder()
+wav = preprocess_wav("speaker.wav")
+embed = voice_encoder.embed_utterance(wav)
+print(f"Resemblyzer embedding: {embed.shape}")  # (256,)`}
       />
 
       <NoteBlock type="note" title="Self-Supervised Speaker Representations">

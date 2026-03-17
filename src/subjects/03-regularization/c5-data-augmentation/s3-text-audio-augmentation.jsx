@@ -130,13 +130,12 @@ import random
 
 # --- Text Augmentation (EDA: Easy Data Augmentation) ---
 def synonym_replace(words, n=1):
-    synonyms = {'quick': 'fast', 'jumps': 'leaps', 'lazy': 'idle', 'big': 'large'}
-    new_words = words.copy()
+    syns = {'quick': 'fast', 'jumps': 'leaps', 'lazy': 'idle'}
+    new = words.copy()
     for _ in range(n):
-        idx = random.randint(0, len(new_words) - 1)
-        if new_words[idx] in synonyms:
-            new_words[idx] = synonyms[new_words[idx]]
-    return new_words
+        i = random.randint(0, len(new) - 1)
+        if new[i] in syns: new[i] = syns[new[i]]
+    return new
 
 def random_deletion(words, p=0.1):
     return [w for w in words if random.random() > p] or [words[0]]
